@@ -23,6 +23,7 @@ let conditionalUIStarted = false;
 function SignInFields({ onSwitch }: { onSwitch: () => void }) {
   const router = useRouter();
   const [isPasskeyPending, startPasskeyTransition] = useTransition();
+  const [isGooglePending, startGoogleTransition] = useTransition();
 
   const {
     register,
@@ -33,7 +34,7 @@ function SignInFields({ onSwitch }: { onSwitch: () => void }) {
     resolver: zodResolver(signInSchema),
   });
 
-  const busy = isSubmitting || isPasskeyPending;
+  const busy = isSubmitting || isPasskeyPending || isGooglePending;
 
   const onSubmit = async (data: SignInValues) => {
     const { error } = await authClient.signIn.email(data);
@@ -54,6 +55,20 @@ function SignInFields({ onSwitch }: { onSwitch: () => void }) {
         return;
       }
       router.push("/dashboard");
+    });
+  }
+
+  function handleGoogleSignIn() {
+    startGoogleTransition(async () => {
+      const { error } = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/dashboard",
+      });
+      if (error) {
+        setError("root", {
+          message: error.message ?? "Google sign-in failed.",
+        });
+      }
     });
   }
 
@@ -137,6 +152,16 @@ function SignInFields({ onSwitch }: { onSwitch: () => void }) {
       >
         <HugeiconsIcon icon={FingerPrintScanIcon} size={16} />
         {isPasskeyPending ? "Waiting for passkey…" : "Sign in with passkey"}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="lg"
+        className="w-full"
+        onClick={handleGoogleSignIn}
+        disabled={busy}
+      >
+        {isGooglePending ? "Redirecting to Google…" : "Continue with Google"}
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">

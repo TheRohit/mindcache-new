@@ -86,14 +86,14 @@ function HeaderActions({ children, className }: { children: React.ReactNode; cla
 }
 
 function HeaderThemeToggle({ className }: { className?: string }) {
-  const { setTheme } = useTheme()
+  const { setTheme, resolvedTheme } = useTheme()
 
   return (
     <Button
       variant="ghost"
       size="icon"
       aria-label="Toggle theme"
-      onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
       className={className}
     >
       <HugeiconsIcon icon={Sun01Icon} className="size-4 hidden dark:block" strokeWidth={1.5} />
