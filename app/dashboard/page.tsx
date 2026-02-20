@@ -5,6 +5,13 @@ import { listMemories } from "@/lib/content-service";
 
 export const dynamic = "force-dynamic";
 
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good Morning";
+  if (hour < 18) return "Good Afternoon";
+  return "Good Evening";
+}
+
 export default async function DashboardPage() {
   const session = await getServerSession();
   if (!session?.user) {
@@ -27,5 +34,18 @@ export default async function DashboardPage() {
     updatedAt: item.updatedAt.toISOString(),
   }));
 
-  return <MemoryDashboard initialItems={initialItems} />;
+  const firstName = (session.user.name ?? "").split(" ")[0] || "there";
+
+  return (
+    <div className="flex w-full flex-col items-center gap-12 px-4 py-16 sm:px-6 sm:py-12">
+      <div className="flex w-full flex-col items-center gap-8">
+        <h1 className="text-shadow-neo scroll-m-20 text-4xl font-extrabold tracking-tight text-orange-400 lg:text-5xl">
+          {getGreeting()},{" "}
+          <span className="text-[#51b8ff]">{firstName}</span>
+        </h1>
+
+        <MemoryDashboard initialItems={initialItems} />
+      </div>
+    </div>
+  );
 }

@@ -16,9 +16,9 @@ import {
   updateContentSchema,
 } from "@/lib/validations";
 
-export async function listContentAction() {
+export async function listContentAction(options?: { limit?: number; cursor?: string }) {
   const user = await requireServerUser();
-  const memories = await listMemories(user.id);
+  const memories = await listMemories(user.id, options);
   return memories;
 }
 

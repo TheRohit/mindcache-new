@@ -8,6 +8,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -47,6 +48,7 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/* ─── Light Theme (original) ──────────────────────────────── */
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -71,7 +73,7 @@
   --chart-3: oklch(0.63 0.23 304);
   --chart-4: oklch(0.56 0.25 302);
   --chart-5: oklch(0.50 0.24 302);
-  --radius: 0;
+  --radius: 0px;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.56 0.25 302);
@@ -82,6 +84,21 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+body {
+  letter-spacing: var(--tracking-normal);
+}
+
+.my-masonry-grid {
+  display: flex;
+  margin-left: -24px; /* gap */
+  width: auto;
+}
+.my-masonry-grid_column {
+  padding-left: 24px; /* gap */
+  background-clip: padding-box;
+}
+
+/* ─── Dark Theme (original) ───────────────────────────────── */
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
@@ -116,11 +133,80 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* ─── Utilities ────────────────────────────────────────────── */
+@utility text-shadow-neo {
+  text-shadow: 3px 3px #0f172a;
+  -webkit-text-stroke-width: 1px;
+  -webkit-text-stroke-color: #0f172a;
+}
+
+/* ─── Base ─────────────────────────────────────────────────── */
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
+  html {
+    scroll-behavior: smooth;
   }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    background-image: 
+      linear-gradient(to right, var(--border) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: top left;
+  }
+  ::selection {
+    background: oklch(0.56 0.25 302 / 20%);
+    color: var(--foreground);
+  }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+}
+
+/* ─── Type-specific badge colors ───────────────────────────── */
+.type-badge-note {
+  background: oklch(0.52 0.14 145 / 12%);
+  color: oklch(0.42 0.14 145);
+  border: 1px solid oklch(0.52 0.14 145 / 25%);
+}
+.dark .type-badge-note {
+  background: oklch(0.65 0.14 145 / 15%);
+  color: oklch(0.72 0.14 145);
+  border: 1px solid oklch(0.65 0.14 145 / 25%);
+}
+
+.type-badge-website {
+  background: oklch(0.52 0.18 240 / 12%);
+  color: oklch(0.42 0.18 240);
+  border: 1px solid oklch(0.52 0.18 240 / 25%);
+}
+.dark .type-badge-website {
+  background: oklch(0.60 0.18 240 / 15%);
+  color: oklch(0.70 0.16 240);
+  border: 1px solid oklch(0.60 0.18 240 / 25%);
+}
+
+.type-badge-youtube {
+  background: oklch(0.55 0.22 25 / 12%);
+  color: oklch(0.48 0.22 25);
+  border: 1px solid oklch(0.55 0.22 25 / 25%);
+}
+.dark .type-badge-youtube {
+  background: oklch(0.62 0.22 25 / 15%);
+  color: oklch(0.70 0.18 25);
+  border: 1px solid oklch(0.62 0.22 25 / 25%);
+}
+
+.type-badge-tweet {
+  background: oklch(0.52 0.18 235 / 12%);
+  color: oklch(0.42 0.18 235);
+  border: 1px solid oklch(0.52 0.18 235 / 25%);
+}
+.dark .type-badge-tweet {
+  background: oklch(0.60 0.18 235 / 15%);
+  color: oklch(0.70 0.16 235);
+  border: 1px solid oklch(0.60 0.18 235 / 25%);
 }

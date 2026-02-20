@@ -53,7 +53,8 @@ function HeaderRoot({ children, className }: { children: React.ReactNode; classN
     <HeaderContext value={{ session }}>
       <header
         className={cn(
-          "sticky top-0 z-30 w-full border-b border-border/60 bg-background/80 backdrop-blur-md",
+          "sticky top-0 z-30 w-full",
+          "bg-transparent",
           className,
         )}
       >
@@ -67,11 +68,37 @@ function HeaderRoot({ children, className }: { children: React.ReactNode; classN
 
 function HeaderLogo({ children, className }: { children?: React.ReactNode; className?: string }) {
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("flex items-center gap-2.5", className)}>
       {children ?? (
-        <span className="text-sm font-semibold tracking-tight text-foreground">
-          MindCache
-        </span>
+        <>
+          {/* Logo mark */}
+          <div className="relative flex size-7 items-center justify-center">
+            <div className="absolute inset-0 rounded-none bg-primary/20 blur-sm" />
+            <div className="relative flex size-7 items-center justify-center rounded-none bg-primary/15 border border-primary/25">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="text-primary"
+              >
+                <circle cx="7" cy="3" r="2" fill="currentColor" />
+                <circle cx="3" cy="10" r="1.5" fill="currentColor" opacity="0.7" />
+                <circle cx="11" cy="10" r="1.5" fill="currentColor" opacity="0.7" />
+                <line x1="7" y1="5" x2="3" y2="8.5" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+                <line x1="7" y1="5" x2="11" y2="8.5" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+                <line x1="3" y1="10" x2="11" y2="10" stroke="currentColor" strokeWidth="1" opacity="0.3" />
+              </svg>
+            </div>
+          </div>
+          <span
+            className="text-sm font-bold tracking-tight text-foreground"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            MindCache
+          </span>
+        </>
       )}
     </div>
   )
@@ -94,10 +121,10 @@ function HeaderThemeToggle({ className }: { className?: string }) {
       size="icon"
       aria-label="Toggle theme"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      className={className}
+      className={cn("size-8 text-muted-foreground hover:text-foreground", className)}
     >
       <HugeiconsIcon icon={Sun01Icon} className="size-4 hidden dark:block" strokeWidth={1.5} />
-      <HugeiconsIcon icon={MoonIcon}  className="size-4 block  dark:hidden" strokeWidth={1.5} />
+      <HugeiconsIcon icon={MoonIcon}  className="size-4 block dark:hidden" strokeWidth={1.5} />
     </Button>
   )
 }
@@ -110,7 +137,7 @@ function HeaderUserMenu({ className }: { className?: string }) {
 
   if (session.isPending) {
     return (
-      <div className={cn("size-8 animate-pulse rounded-full bg-muted", className)} />
+      <div className={cn("size-7 animate-pulse rounded-full bg-muted", className)} />
     )
   }
 
@@ -137,11 +164,20 @@ function HeaderUserMenu({ className }: { className?: string }) {
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button variant="ghost" size="icon" aria-label="User menu" className={cn("rounded-full", className)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="User menu"
+              className={cn("rounded-full size-8 p-0", className)}
+            >
               {user.image ? (
-                <img src={user.image} alt={user.name ?? "User avatar"} className="size-7 rounded-full object-cover" />
+                <img
+                  src={user.image}
+                  alt={user.name ?? "User avatar"}
+                  className="size-7 rounded-full object-cover ring-1 ring-border"
+                />
               ) : (
-                <span className="flex size-7 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
+                <span className="flex size-7 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary ring-1 ring-primary/30">
                   {initials}
                 </span>
               )}
@@ -150,12 +186,12 @@ function HeaderUserMenu({ className }: { className?: string }) {
         />
 
         <DropdownMenuContent align="end" className="w-56">
-          <div className="flex items-center gap-2.5 px-1.5 py-2">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary">
+          <div className="flex items-center gap-2.5 px-2 py-2.5">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/20">
               {user.image ? (
                 <img src={user.image} alt={user.name ?? "User"} className="size-8 rounded-full object-cover" />
               ) : (
-                <span className="text-[11px] font-semibold text-primary-foreground">
+                <span className="text-[11px] font-bold text-primary">
                   {initials}
                 </span>
               )}
@@ -164,22 +200,18 @@ function HeaderUserMenu({ className }: { className?: string }) {
               {user.name && (
                 <p className="truncate text-xs font-semibold text-foreground">{user.name}</p>
               )}
-              <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+              <p className="truncate text-[11px] text-muted-foreground">{user.email}</p>
             </div>
           </div>
 
           <DropdownMenuSeparator />
 
           <DropdownMenuGroup>
-            <DropdownMenuItem
-              onClick={() => setPasskeyOpen(true)}
-            >
+            <DropdownMenuItem onClick={() => setPasskeyOpen(true)}>
               <HugeiconsIcon icon={FingerPrintScanIcon} className="size-4 text-muted-foreground" strokeWidth={1.5} />
               Manage Passkeys
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => setChangePasswordOpen(true)}
-            >
+            <DropdownMenuItem onClick={() => setChangePasswordOpen(true)}>
               <HugeiconsIcon icon={LockPasswordIcon} className="size-4 text-muted-foreground" strokeWidth={1.5} />
               Change Password
             </DropdownMenuItem>

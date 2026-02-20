@@ -161,13 +161,26 @@ export async function ingestMemory(userId: string, input: IngestContentValues) {
   return created;
 }
 
-export async function listMemories(userId: string) {
-  const rows = await db
+export async function listMemories(userId: string, options?: { limit?: number; cursor?: string }) {
+  const limit = options?.limit ?? 50;
+  
+  let query = db
     .select()
     .from(content)
     .where(eq(content.userId, userId))
-    .orderBy(desc(content.createdAt));
+    .orderBy(desc(content.createdAt))
+    .$dynamic();
 
+  if (options?.cursor) {
+    query = query.where(
+      and(
+        eq(content.userId, userId),
+        sql`${content.createdAt} < ${new Date(options.cursor).toISOString()}`
+      )
+    );
+  }
+
+  const rows = await query.limit(limit);
   return rows;
 }
 
