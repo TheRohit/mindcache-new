@@ -13,5 +13,3 @@ export const SEARCH_RESULT_LIMIT = parseNumber(
   20,
 );
 
-export const EMBEDDING_DIMENSIONS = 128;
-

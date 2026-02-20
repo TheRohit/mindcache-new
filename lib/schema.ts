@@ -1,6 +1,5 @@
 import { sql } from "drizzle-orm";
 import {
-  customType,
   index,
   jsonb,
   pgEnum,
@@ -12,27 +11,6 @@ import { user } from "./auth-schema";
 
 // Better Auth tables — managed by better-auth, do not modify directly.
 export * from "./auth-schema";
-
-const vector = customType<{
-  data: number[];
-  driverData: string;
-  config: { dimensions: number };
-}>({
-  dataType(config) {
-    return `vector(${config?.dimensions ?? 128})`;
-  },
-  toDriver(value) {
-    return `[${value.join(",")}]`;
-  },
-  fromDriver(value) {
-    const trimmed = value.trim();
-    const raw = trimmed.startsWith("[") && trimmed.endsWith("]")
-      ? trimmed.slice(1, -1)
-      : trimmed;
-    if (!raw) return [];
-    return raw.split(",").map((item) => Number(item.trim()));
-  },
-});
 
 export const contentTypeEnum = pgEnum("content_type", [
   "note",
@@ -70,8 +48,6 @@ export const content = pgTable(
       .$type<Record<string, unknown>>()
       .notNull()
       .default(sql`'{}'::jsonb`),
-    embedding: vector("embedding", { dimensions: 128 }).notNull(),
-    embeddingModel: text("embeddingModel").notNull().default("local-hash-v1"),
     ingestStatus: ingestStatusEnum("ingestStatus").notNull().default("ready"),
     lastError: text("lastError"),
     createdAt: timestamp("createdAt", { withTimezone: true }).notNull().defaultNow(),

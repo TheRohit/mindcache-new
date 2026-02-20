@@ -1,13 +1,17 @@
-import { and, desc, eq, getTableColumns, inArray, sql } from "drizzle-orm";
 import { generateObject, generateText } from "ai";
 import { z } from "zod";
-import { db } from "./db";
 import { aiModels, groqProviderOptions } from "./ai/models";
-import { buildEmbedding } from "./embeddings";
 import { extractTweetMetadata, extractWebsiteMetadata, extractYouTubeMetadata } from "./metadata";
 import { SIMILARITY_THRESHOLD } from "./search-config";
-import { content } from "./schema";
-import type { SearchResultItem } from "./content-types";
+import {
+  buildSearchableText,
+  deleteMemoryRecord,
+  fetchMemoryById,
+  listMemoriesByUser,
+  searchMemoriesByText,
+  toIntegratedRecord,
+  upsertMemoryRecord,
+} from "./pinecone";
 import type {
   DeleteContentValues,
   IngestContentValues,
@@ -121,138 +125,122 @@ export async function ingestMemory(userId: string, input: IngestContentValues) {
   }
 
   const normalized = await normalizeMetadata(fallbackMetadata, body);
-  const embeddingInput = [
-    String(normalized.title ?? ""),
-    String(normalized.description ?? ""),
-    body,
-  ]
-    .filter(Boolean)
-    .join("\n");
-  const embedding = buildEmbedding(embeddingInput);
   const id = crypto.randomUUID();
-  const timestamp = nowIso();
+  const timestamp = new Date(nowIso());
+  const sourceId = (normalized.sourceId as string | null | undefined) ?? null;
+  const sourceUrl = (normalized.sourceUrl as string | null | undefined) ?? null;
+  const canonicalUrl = (normalized.canonicalUrl as string | null | undefined) ?? null;
+  const siteName = (normalized.siteName as string | null | undefined) ?? null;
+  const author = (normalized.author as string | null | undefined) ?? null;
+  const publishedAt = normalized.publishedAt ? String(normalized.publishedAt) : null;
+  const thumbnailUrl = (normalized.thumbnailUrl as string | null | undefined) ?? null;
+  const faviconUrl = (normalized.faviconUrl as string | null | undefined) ?? null;
+  const title = (normalized.title as string | null | undefined) ?? null;
+  const description = (normalized.description as string | null | undefined) ?? null;
+  const text = buildSearchableText({ title, description, body });
 
-  const [created] = await db
-    .insert(content)
-    .values({
-      id,
-      userId,
-      type: input.type,
-      sourceId: (normalized.sourceId as string | null | undefined) ?? null,
-      sourceUrl: (normalized.sourceUrl as string | null | undefined) ?? null,
-      canonicalUrl: (normalized.canonicalUrl as string | null | undefined) ?? null,
-      siteName: (normalized.siteName as string | null | undefined) ?? null,
-      author: (normalized.author as string | null | undefined) ?? null,
-      publishedAt: normalized.publishedAt
-        ? new Date(String(normalized.publishedAt))
-        : null,
-      thumbnailUrl: (normalized.thumbnailUrl as string | null | undefined) ?? null,
-      faviconUrl: (normalized.faviconUrl as string | null | undefined) ?? null,
-      title: (normalized.title as string | null | undefined) ?? null,
-      description: (normalized.description as string | null | undefined) ?? null,
-      body,
-      rawMetadata: normalized,
-      embedding,
-      ingestStatus: "ready",
-      updatedAt: new Date(timestamp),
-    })
-    .returning();
+  const integratedRecord = toIntegratedRecord({
+    id,
+    type: input.type,
+    body,
+    sourceId,
+    sourceUrl,
+    canonicalUrl,
+    siteName,
+    author,
+    publishedAt,
+    thumbnailUrl,
+    faviconUrl,
+    title,
+    description,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    text,
+  });
 
-  return created;
+  await upsertMemoryRecord(userId, integratedRecord);
+
+  return {
+    id,
+    userId,
+    type: input.type,
+    sourceId,
+    sourceUrl,
+    canonicalUrl,
+    siteName,
+    author,
+    publishedAt: publishedAt ? new Date(publishedAt) : null,
+    thumbnailUrl,
+    faviconUrl,
+    title,
+    description,
+    body,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
 }
 
 export async function listMemories(userId: string, options?: { limit?: number; cursor?: string }) {
-  const limit = options?.limit ?? 50;
-  
-  let query = db
-    .select()
-    .from(content)
-    .where(eq(content.userId, userId))
-    .orderBy(desc(content.createdAt))
-    .$dynamic();
-
-  if (options?.cursor) {
-    query = query.where(
-      and(
-        eq(content.userId, userId),
-        sql`${content.createdAt} < ${new Date(options.cursor).toISOString()}`
-      )
-    );
-  }
-
-  const rows = await query.limit(limit);
-  return rows;
+  return listMemoriesByUser(userId, options);
 }
 
 export async function updateMemory(userId: string, input: UpdateContentValues) {
-  const updates: Partial<typeof content.$inferInsert> = {
-    updatedAt: new Date(),
+  const existing = await fetchMemoryById(userId, input.id);
+  if (!existing) return null;
+
+  const nextTitle = input.title !== undefined ? input.title : existing.title;
+  const nextDescription = input.description !== undefined ? input.description : existing.description;
+  const nextThumbnail =
+    input.thumbnailUrl !== undefined ? input.thumbnailUrl ?? null : existing.thumbnailUrl;
+  const now = new Date();
+
+  await upsertMemoryRecord(
+    userId,
+    toIntegratedRecord({
+      id: existing.id,
+      type: existing.type,
+      body: existing.body,
+      sourceId: existing.sourceId,
+      sourceUrl: existing.sourceUrl,
+      canonicalUrl: existing.canonicalUrl,
+      siteName: existing.siteName,
+      author: existing.author,
+      publishedAt: existing.publishedAt?.toISOString() ?? null,
+      thumbnailUrl: nextThumbnail,
+      faviconUrl: existing.faviconUrl,
+      title: nextTitle,
+      description: nextDescription,
+      createdAt: existing.createdAt,
+      updatedAt: now,
+      text: buildSearchableText({
+        title: nextTitle,
+        description: nextDescription,
+        body: existing.body,
+      }),
+    }),
+  );
+
+  return {
+    ...existing,
+    title: nextTitle,
+    description: nextDescription,
+    thumbnailUrl: nextThumbnail,
+    updatedAt: now,
   };
-  if (input.title !== undefined) updates.title = input.title;
-  if (input.description !== undefined) updates.description = input.description;
-  if (input.thumbnailUrl !== undefined) updates.thumbnailUrl = input.thumbnailUrl ?? null;
-
-  const [updated] = await db
-    .update(content)
-    .set(updates)
-    .where(and(eq(content.id, input.id), eq(content.userId, userId)))
-    .returning();
-
-  return updated ?? null;
 }
 
 export async function deleteMemory(userId: string, input: DeleteContentValues) {
-  const [deleted] = await db
-    .delete(content)
-    .where(and(eq(content.id, input.id), eq(content.userId, userId)))
-    .returning({ id: content.id });
-
-  return deleted ?? null;
+  return deleteMemoryRecord(userId, input.id);
 }
 
 export async function searchMemories(userId: string, input: SearchMemoriesValues) {
   const threshold = input.threshold ?? SIMILARITY_THRESHOLD;
-  const queryEmbedding = buildEmbedding(input.query);
-  const queryVector = `[${queryEmbedding.join(",")}]`;
-  const similarityExpr = sql<number>`1 - (${content.embedding} <=> ${queryVector}::vector)`;
-
-  const whereClause = input.types?.length
-    ? and(eq(content.userId, userId), inArray(content.type, input.types))
-    : eq(content.userId, userId);
-
-  const rows = await db
-    .select({
-      ...getTableColumns(content),
-      score: similarityExpr,
-    })
-    .from(content)
-    .where(whereClause)
-    .orderBy(desc(similarityExpr))
-    .limit(input.limit);
-
+  const rows = await searchMemoriesByText(userId, {
+    query: input.query,
+    limit: input.limit,
+    types: input.types,
+  });
   const filteredRows = rows.filter((row) => row.score >= threshold);
-  const finalRows = filteredRows.length > 0 ? filteredRows : rows;
-
-  return finalRows.map<SearchResultItem>((item) => ({
-    id: item.id,
-    userId: item.userId,
-    type: item.type,
-    body: item.body,
-    createdAt: item.createdAt.toISOString(),
-    updatedAt: item.updatedAt.toISOString(),
-    metadata: {
-      sourceId: item.sourceId,
-      sourceUrl: item.sourceUrl,
-      canonicalUrl: item.canonicalUrl,
-      siteName: item.siteName,
-      author: item.author,
-      publishedAt: item.publishedAt?.toISOString() ?? null,
-      thumbnailUrl: item.thumbnailUrl,
-      faviconUrl: item.faviconUrl,
-      title: item.title,
-      description: item.description,
-    },
-    score: item.score,
-  }));
+  return filteredRows.length > 0 ? filteredRows : rows;
 }
 

@@ -33,7 +33,6 @@ if (toBeAdded.length > 0) {
 }
 
 await runMigrations();
-await db.execute(sql`CREATE EXTENSION IF NOT EXISTS vector`);
 await db.execute(sql`
   CREATE TYPE IF NOT EXISTS content_type AS ENUM ('note', 'website', 'youtube', 'tweet');
 `);
@@ -57,8 +56,6 @@ await db.execute(sql`
     description text,
     body text NOT NULL,
     "rawMetadata" jsonb NOT NULL DEFAULT '{}'::jsonb,
-    embedding vector(128) NOT NULL,
-    "embeddingModel" text NOT NULL DEFAULT 'local-hash-v1',
     "ingestStatus" ingest_status NOT NULL DEFAULT 'ready',
     "lastError" text,
     "createdAt" timestamp with time zone NOT NULL DEFAULT now(),
@@ -70,8 +67,5 @@ await db.execute(
   sql`CREATE INDEX IF NOT EXISTS content_user_created_idx ON content ("userId", "createdAt")`,
 );
 await db.execute(sql`CREATE INDEX IF NOT EXISTS content_user_type_idx ON content ("userId", type)`);
-await db.execute(
-  sql`CREATE INDEX IF NOT EXISTS content_embedding_idx ON content USING ivfflat (embedding vector_cosine_ops)`,
-);
 
 console.log("✓ Migrations applied successfully.");
