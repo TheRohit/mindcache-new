@@ -13,8 +13,10 @@ type SourceType = IngestContentValues["type"];
 function detectType(input: string): SourceType {
   const s = input.trim();
   if (!s) return "note";
-  if (/^https?:\/\/(www\.)?(youtube\.com\/watch|youtu\.be\/)/.test(s)) return "youtube";
-  if (/^https?:\/\/(www\.)?(twitter\.com|x\.com)\/\w+\/status\/\d+/.test(s)) return "tweet";
+  if (/^https?:\/\/(www\.)?(youtube\.com\/watch|youtu\.be\/)/.test(s))
+    return "youtube";
+  if (/^https?:\/\/(www\.)?(twitter\.com|x\.com)\/\w+\/status\/\d+/.test(s))
+    return "tweet";
   if (/^https?:\/\//.test(s)) return "website";
   return "note";
 }
@@ -29,7 +31,12 @@ const typeConfig: Record<
     className: "type-badge-note",
     icon: (
       <svg className="size-3" viewBox="0 0 12 12" fill="none">
-        <path d="M2 2.5h8M2 5.5h8M2 8.5h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path
+          d="M2 2.5h8M2 5.5h8M2 8.5h5"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
       </svg>
     ),
   },
@@ -39,7 +46,12 @@ const typeConfig: Record<
     icon: (
       <svg className="size-3" viewBox="0 0 12 12" fill="none">
         <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M6 1.5C6 1.5 4 4 4 6s2 4.5 2 4.5M6 1.5C6 1.5 8 4 8 6s-2 4.5-2 4.5M1.5 6h9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path
+          d="M6 1.5C6 1.5 4 4 4 6s2 4.5 2 4.5M6 1.5C6 1.5 8 4 8 6s-2 4.5-2 4.5M1.5 6h9"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
       </svg>
     ),
   },
@@ -48,7 +60,15 @@ const typeConfig: Record<
     className: "type-badge-youtube",
     icon: (
       <svg className="size-3" viewBox="0 0 12 12" fill="none">
-        <rect x="1" y="2.5" width="10" height="7" rx="2" stroke="currentColor" strokeWidth="1.5" />
+        <rect
+          x="1"
+          y="2.5"
+          width="10"
+          height="7"
+          rx="2"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
         <path d="M5 4.5L8 6L5 7.5V4.5Z" fill="currentColor" />
       </svg>
     ),
@@ -70,7 +90,7 @@ function TypeChip({ type }: { type: SourceType }) {
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-none px-2 py-0.5 text-[11px] font-semibold transition-all",
-        cfg.className,
+        cfg.className
       )}
     >
       {cfg.icon}
@@ -86,7 +106,13 @@ interface PreviewData {
   thumbnailUrl?: string | null;
 }
 
-function URLPreview({ preview, loading }: { preview: PreviewData | null; loading: boolean }) {
+function URLPreview({
+  preview,
+  loading,
+}: {
+  preview: PreviewData | null;
+  loading: boolean;
+}) {
   if (!loading && !preview) return null;
 
   return (
@@ -180,18 +206,21 @@ export function SmartIngest({ onSubmit, isSubmitting }: SmartIngestProps) {
     };
   }, [isURL, type, trimmed]);
 
-  // Reset preview when switching away from URL
-  useEffect(() => {
-    if (!isURL) setPreview(null);
-  }, [isURL]);
-
   function buildPayload(): IngestContentValues | null {
     if (!trimmed) return null;
     switch (type) {
       case "note":
-        return { type: "note", body: trimmed, title: title.trim() || undefined };
+        return {
+          type: "note",
+          body: trimmed,
+          title: title.trim() || undefined,
+        };
       case "website":
-        return { type: "website", url: trimmed, title: title.trim() || undefined };
+        return {
+          type: "website",
+          url: trimmed,
+          title: title.trim() || undefined,
+        };
       case "youtube":
         return { type: "youtube", url: trimmed };
       case "tweet":
@@ -227,6 +256,7 @@ export function SmartIngest({ onSubmit, isSubmitting }: SmartIngestProps) {
       className={cn(
         "overflow-hidden rounded-none border-2 border-border bg-card transition-all duration-200 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]",
         "focus-within:-translate-x-0.5 focus-within:-translate-y-0.5 focus-within:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:focus-within:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)]",
+        "md:w-3/4 lg:w-1/2 "
       )}
     >
       {/* Optional title row */}
@@ -260,7 +290,7 @@ export function SmartIngest({ onSubmit, isSubmitting }: SmartIngestProps) {
           className={cn(
             "w-full resize-none bg-transparent text-sm leading-relaxed outline-none",
             "placeholder:text-muted-foreground/50 text-foreground",
-            "transition-all duration-150",
+            "transition-all duration-150"
           )}
           style={{ minHeight: isURL ? "28px" : "72px" }}
         />
@@ -319,9 +349,7 @@ export const Ingest = {
     children: React.ReactNode;
     onSubmit: (p: IngestContentValues) => Promise<void>;
     isSubmitting: boolean;
-  }) => (
-    <SmartIngest onSubmit={onSubmit} isSubmitting={isSubmitting} />
-  ),
+  }) => <SmartIngest onSubmit={onSubmit} isSubmitting={isSubmitting} />,
   SourceTabs: () => null,
   Fields: () => null,
   Preview: () => null,

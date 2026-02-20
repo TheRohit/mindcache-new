@@ -82,7 +82,9 @@ function toDashboardItem(raw: {
 
 export function MemoryDashboard({ initialItems }: MemoryDashboardProps) {
   const [items, setItems] = useState<DashboardItem[]>(initialItems);
-  const [searchResults, setSearchResults] = useState<SearchResultItem[] | null>(null);
+  const [searchResults, setSearchResults] = useState<SearchResultItem[] | null>(
+    null
+  );
   const [query, setQuery] = useState("");
   const [isIngesting, startIngestTransition] = useTransition();
   const [isSearching, startSearchTransition] = useTransition();
@@ -98,11 +100,11 @@ export function MemoryDashboard({ initialItems }: MemoryDashboardProps) {
       try {
         const cursor = items[items.length - 1]?.createdAt;
         if (!cursor) return;
-        
+
         const nextItems = await listContentAction({ cursor, limit: 50 });
         setItems((prev) => [
           ...prev,
-          ...nextItems.map((item) => toDashboardItem(item))
+          ...nextItems.map((item) => toDashboardItem(item)),
         ]);
         setHasMore(nextItems.length >= 50);
       } catch (error) {
@@ -135,7 +137,9 @@ export function MemoryDashboard({ initialItems }: MemoryDashboardProps) {
         toast.success("Memory saved.");
         refreshList();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to save memory.");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to save memory."
+        );
       }
     });
   }
@@ -166,7 +170,9 @@ export function MemoryDashboard({ initialItems }: MemoryDashboardProps) {
       try {
         await deleteContentAction({ id });
         setItems((prev) => prev.filter((item) => item.id !== id));
-        setSearchResults((prev) => prev?.filter((item) => item.id !== id) ?? null);
+        setSearchResults(
+          (prev) => prev?.filter((item) => item.id !== id) ?? null
+        );
         toast.success("Memory deleted.");
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Delete failed.");
@@ -179,7 +185,7 @@ export function MemoryDashboard({ initialItems }: MemoryDashboardProps) {
   const breakpointColumnsObj = {
     default: 3,
     1024: 2,
-    640: 1
+    640: 1,
   };
 
   return (
@@ -194,7 +200,7 @@ export function MemoryDashboard({ initialItems }: MemoryDashboardProps) {
       )}
 
       {/* Smart capture composer */}
-      <div className="mb-6">
+      <div className="mb-6 flex justify-center items-center">
         <SmartIngest onSubmit={handleIngest} isSubmitting={isIngesting} />
       </div>
 
@@ -209,13 +215,24 @@ export function MemoryDashboard({ initialItems }: MemoryDashboardProps) {
           <svg
             className={cn(
               "size-4 shrink-0 transition-colors",
-              isSearching ? "text-primary" : "text-muted-foreground/60",
+              isSearching ? "text-primary" : "text-muted-foreground/60"
             )}
             viewBox="0 0 16 16"
             fill="none"
           >
-            <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="2" />
-            <path d="M10 10L13.5 13.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <circle
+              cx="6.5"
+              cy="6.5"
+              r="4.5"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <path
+              d="M10 10L13.5 13.5"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
           </svg>
 
           <Input
@@ -234,7 +251,12 @@ export function MemoryDashboard({ initialItems }: MemoryDashboardProps) {
               className="h-8 px-2.5 text-muted-foreground hover:text-foreground active:translate-y-0"
             >
               <svg className="size-4" viewBox="0 0 12 12" fill="none">
-                <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path
+                  d="M2 2L10 10M10 2L2 10"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
               </svg>
             </Button>
           )}
@@ -259,8 +281,11 @@ export function MemoryDashboard({ initialItems }: MemoryDashboardProps) {
         {searchResults !== null && (
           <div className="mt-3 flex items-center gap-2 px-1">
             <span className="text-sm font-medium text-muted-foreground">
-              {searchResults.length} result{searchResults.length !== 1 ? "s" : ""} for{" "}
-              <span className="font-bold text-foreground">&quot;{query}&quot;</span>
+              {searchResults.length} result
+              {searchResults.length !== 1 ? "s" : ""} for{" "}
+              <span className="font-bold text-foreground">
+                &quot;{query}&quot;
+              </span>
             </span>
             <button
               onClick={clearSearch}
@@ -301,13 +326,16 @@ export function MemoryDashboard({ initialItems }: MemoryDashboardProps) {
                 deleting: deletingId === item.id,
               };
 
-              if (item.type === "note") return <NoteCard key={item.id} {...cardProps} />;
-              if (item.type === "website") return <WebsiteCard key={item.id} {...cardProps} />;
-              if (item.type === "youtube") return <YouTubeCard key={item.id} {...cardProps} />;
+              if (item.type === "note")
+                return <NoteCard key={item.id} {...cardProps} />;
+              if (item.type === "website")
+                return <WebsiteCard key={item.id} {...cardProps} />;
+              if (item.type === "youtube")
+                return <YouTubeCard key={item.id} {...cardProps} />;
               return <TweetCard key={item.id} {...cardProps} />;
             })}
           </Masonry>
-          
+
           {/* Infinite Scroll trigger */}
           {!searchResults && hasMore && (
             <div ref={ref} className="py-8 flex justify-center">
@@ -334,14 +362,36 @@ function EmptyState({
     return (
       <div className="flex flex-col items-center justify-center gap-4 rounded-none border-2 border-dashed border-border/50 bg-card/30 py-20 text-center shadow-sm">
         <div className="flex size-14 items-center justify-center rounded-none bg-muted border-2 border-border/50">
-          <svg className="size-6 text-muted-foreground" viewBox="0 0 16 16" fill="none">
-            <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="2" />
-            <path d="M10 10L13.5 13.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <svg
+            className="size-6 text-muted-foreground"
+            viewBox="0 0 16 16"
+            fill="none"
+          >
+            <circle
+              cx="6.5"
+              cy="6.5"
+              r="4.5"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <path
+              d="M10 10L13.5 13.5"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
           </svg>
         </div>
         <div>
-          <p className="text-lg font-bold text-foreground" style={{ fontFamily: "var(--font-display)" }}>No memories found</p>
-          <p className="mt-1 text-sm font-medium text-muted-foreground">Try a different search query</p>
+          <p
+            className="text-lg font-bold text-foreground"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            No memories found
+          </p>
+          <p className="mt-1 text-sm font-medium text-muted-foreground">
+            Try a different search query
+          </p>
         </div>
         <Button variant="outline" size="sm" onClick={onClear} className="mt-2">
           Clear search
@@ -353,21 +403,55 @@ function EmptyState({
   return (
     <div className="flex flex-col items-center justify-center gap-4 rounded-none border-2 border-dashed border-border/50 bg-card/30 py-24 text-center shadow-sm">
       <div className="flex size-16 items-center justify-center rounded-none bg-primary/10 border-2 border-primary/20">
-        <svg width="28" height="28" viewBox="0 0 14 14" fill="none" className="text-primary">
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 14 14"
+          fill="none"
+          className="text-primary"
+        >
           <circle cx="7" cy="3" r="2" fill="currentColor" />
           <circle cx="3" cy="10" r="1.5" fill="currentColor" opacity="0.7" />
           <circle cx="11" cy="10" r="1.5" fill="currentColor" opacity="0.7" />
-          <line x1="7" y1="5" x2="3" y2="8.5" stroke="currentColor" strokeWidth="1.5" opacity="0.5" />
-          <line x1="7" y1="5" x2="11" y2="8.5" stroke="currentColor" strokeWidth="1.5" opacity="0.5" />
-          <line x1="3" y1="10" x2="11" y2="10" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
+          <line
+            x1="7"
+            y1="5"
+            x2="3"
+            y2="8.5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            opacity="0.5"
+          />
+          <line
+            x1="7"
+            y1="5"
+            x2="11"
+            y2="8.5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            opacity="0.5"
+          />
+          <line
+            x1="3"
+            y1="10"
+            x2="11"
+            y2="10"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            opacity="0.3"
+          />
         </svg>
       </div>
       <div>
-        <p className="text-xl font-bold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
+        <p
+          className="text-xl font-bold text-foreground"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
           Your vault is empty
         </p>
         <p className="mt-2 text-sm font-medium text-muted-foreground max-w-sm mx-auto">
-          Add your first memory above — a note, website, YouTube video, or tweet.
+          Add your first memory above — a note, website, YouTube video, or
+          tweet.
         </p>
       </div>
     </div>
