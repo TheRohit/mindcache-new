@@ -48,6 +48,12 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/* ─── Input surface token ──────────────────────────────────── */
+/* Single property consumed by the Input component so that a
+   bg-transparent override properly removes it in all modes.   */
+:root { --input-surface: transparent; }
+.dark { --input-surface: oklch(1 0 0 / 5%); }
+
 /* ─── Light Theme (original) ──────────────────────────────── */
 :root {
   --background: oklch(1 0 0);

@@ -4,6 +4,12 @@ import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import Masonry from "react-masonry-css";
 import { useInView } from "react-intersection-observer";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Search01Icon,
+  Cancel01Icon,
+  AiBrain01Icon,
+} from "@hugeicons/core-free-icons";
 import {
   deleteContentAction,
   ingestContentAction,
@@ -16,71 +22,22 @@ import type { IngestContentValues } from "@/lib/validations";
 import type { SearchResultItem } from "@/lib/content-types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
-
-export interface DashboardItem {
-  id: string;
-  type: "note" | "website" | "youtube" | "tweet";
-  body: string;
-  sourceUrl: string | null;
-  siteName: string | null;
-  author: string | null;
-  publishedAt: string | null;
-  thumbnailUrl: string | null;
-  title: string | null;
-  description: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+import {
+  cn,
+  toDashboardItem,
+  toSearchItem,
+  type DashboardItem,
+} from "@/lib/utils";
 
 interface MemoryDashboardProps {
   initialItems: DashboardItem[];
+  tweetEmbeds?: Record<string, React.ReactNode>;
 }
 
-function toSearchItem(item: DashboardItem): SearchResultItem {
-  return {
-    id: item.id,
-    type: item.type,
-    userId: "current-user",
-    body: item.body,
-    createdAt: item.createdAt,
-    updatedAt: item.updatedAt,
-    metadata: {
-      sourceUrl: item.sourceUrl,
-      siteName: item.siteName,
-      author: item.author,
-      publishedAt: item.publishedAt,
-      thumbnailUrl: item.thumbnailUrl,
-      title: item.title,
-      description: item.description,
-    },
-    score: 1,
-  };
-}
-
-function toDashboardItem(raw: {
-  id: string;
-  type: DashboardItem["type"];
-  body: string;
-  sourceUrl: string | null;
-  siteName: string | null;
-  author: string | null;
-  publishedAt: Date | null;
-  thumbnailUrl: string | null;
-  title: string | null;
-  description: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}) {
-  return {
-    ...raw,
-    publishedAt: raw.publishedAt?.toISOString() ?? null,
-    createdAt: raw.createdAt.toISOString(),
-    updatedAt: raw.updatedAt.toISOString(),
-  } satisfies DashboardItem;
-}
-
-export function MemoryDashboard({ initialItems }: MemoryDashboardProps) {
+export function MemoryDashboard({
+  initialItems,
+  tweetEmbeds,
+}: MemoryDashboardProps) {
   const [items, setItems] = useState<DashboardItem[]>(initialItems);
   const [searchResults, setSearchResults] = useState<SearchResultItem[] | null>(
     null
@@ -190,15 +147,6 @@ export function MemoryDashboard({ initialItems }: MemoryDashboardProps) {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6">
-      {/* Memory count */}
-      {items.length > 0 && (
-        <div className="mb-6">
-          <p className="text-sm font-medium text-muted-foreground">
-            {items.length} memor{items.length === 1 ? "y" : "ies"} saved
-          </p>
-        </div>
-      )}
-
       {/* Smart capture composer */}
       <div className="mb-6 flex justify-center items-center">
         <SmartIngest onSubmit={handleIngest} isSubmitting={isIngesting} />
@@ -212,28 +160,15 @@ export function MemoryDashboard({ initialItems }: MemoryDashboardProps) {
             "transition-all focus-within:-translate-x-0.5 focus-within:-translate-y-0.5 focus-within:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:focus-within:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)]"
           )}
         >
-          <svg
+          <HugeiconsIcon
+            icon={Search01Icon}
+            size={16}
+            strokeWidth={2}
             className={cn(
-              "size-4 shrink-0 transition-colors",
+              "shrink-0 transition-colors",
               isSearching ? "text-primary" : "text-muted-foreground/60"
             )}
-            viewBox="0 0 16 16"
-            fill="none"
-          >
-            <circle
-              cx="6.5"
-              cy="6.5"
-              r="4.5"
-              stroke="currentColor"
-              strokeWidth="2"
-            />
-            <path
-              d="M10 10L13.5 13.5"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
+          />
 
           <Input
             placeholder="Semantic search across all memories…"
@@ -250,14 +185,7 @@ export function MemoryDashboard({ initialItems }: MemoryDashboardProps) {
               onClick={clearSearch}
               className="h-8 px-2.5 text-muted-foreground hover:text-foreground active:translate-y-0"
             >
-              <svg className="size-4" viewBox="0 0 12 12" fill="none">
-                <path
-                  d="M2 2L10 10M10 2L2 10"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
+              <HugeiconsIcon icon={Cancel01Icon} size={16} strokeWidth={2} />
             </Button>
           )}
 
@@ -297,6 +225,15 @@ export function MemoryDashboard({ initialItems }: MemoryDashboardProps) {
         )}
       </div>
 
+      {/* Memory count */}
+      {items.length > 0 && searchResults === null && (
+        <div className="mb-6">
+          <p className="text-sm font-medium text-muted-foreground">
+            {items.length} memor{items.length === 1 ? "y" : "ies"} saved
+          </p>
+        </div>
+      )}
+
       {/* Memory grid */}
       {isEmpty ? (
         <EmptyState isSearch={searchResults !== null} onClear={clearSearch} />
@@ -332,7 +269,13 @@ export function MemoryDashboard({ initialItems }: MemoryDashboardProps) {
                 return <WebsiteCard key={item.id} {...cardProps} />;
               if (item.type === "youtube")
                 return <YouTubeCard key={item.id} {...cardProps} />;
-              return <TweetCard key={item.id} {...cardProps} />;
+              return (
+                <TweetCard
+                  key={item.id}
+                  {...cardProps}
+                  tweetEmbeds={tweetEmbeds}
+                />
+              );
             })}
           </Masonry>
 
@@ -362,25 +305,12 @@ function EmptyState({
     return (
       <div className="flex flex-col items-center justify-center gap-4 rounded-none border-2 border-dashed border-border/50 bg-card/30 py-20 text-center shadow-sm">
         <div className="flex size-14 items-center justify-center rounded-none bg-muted border-2 border-border/50">
-          <svg
-            className="size-6 text-muted-foreground"
-            viewBox="0 0 16 16"
-            fill="none"
-          >
-            <circle
-              cx="6.5"
-              cy="6.5"
-              r="4.5"
-              stroke="currentColor"
-              strokeWidth="2"
-            />
-            <path
-              d="M10 10L13.5 13.5"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-          </svg>
+          <HugeiconsIcon
+            icon={Search01Icon}
+            size={24}
+            strokeWidth={2}
+            className="text-muted-foreground"
+          />
         </div>
         <div>
           <p
@@ -403,44 +333,12 @@ function EmptyState({
   return (
     <div className="flex flex-col items-center justify-center gap-4 rounded-none border-2 border-dashed border-border/50 bg-card/30 py-24 text-center shadow-sm">
       <div className="flex size-16 items-center justify-center rounded-none bg-primary/10 border-2 border-primary/20">
-        <svg
-          width="28"
-          height="28"
-          viewBox="0 0 14 14"
-          fill="none"
+        <HugeiconsIcon
+          icon={AiBrain01Icon}
+          size={28}
+          strokeWidth={1.5}
           className="text-primary"
-        >
-          <circle cx="7" cy="3" r="2" fill="currentColor" />
-          <circle cx="3" cy="10" r="1.5" fill="currentColor" opacity="0.7" />
-          <circle cx="11" cy="10" r="1.5" fill="currentColor" opacity="0.7" />
-          <line
-            x1="7"
-            y1="5"
-            x2="3"
-            y2="8.5"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            opacity="0.5"
-          />
-          <line
-            x1="7"
-            y1="5"
-            x2="11"
-            y2="8.5"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            opacity="0.5"
-          />
-          <line
-            x1="3"
-            y1="10"
-            x2="11"
-            y2="10"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            opacity="0.3"
-          />
-        </svg>
+        />
       </div>
       <div>
         <p

@@ -13,6 +13,8 @@ export interface ContentMetadata {
   faviconUrl?: string | null;
   title?: string | null;
   description?: string | null;
+  likeCount?: number | null;
+  replyCount?: number | null;
 }
 
 export interface MemoryContent {
@@ -28,4 +30,3 @@ export interface MemoryContent {
 export interface SearchResultItem extends MemoryContent {
   score: number;
 }
-

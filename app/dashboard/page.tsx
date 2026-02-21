@@ -1,7 +1,10 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { MemoryDashboard } from "@/components/dashboard/memory-dashboard";
 import { getServerSession } from "@/lib/session";
 import { listMemories } from "@/lib/content-service";
+import { ServerTweetEmbed } from "@/components/tweet/server-tweet-embed";
+import { TweetSkeleton } from "@/components/tweet/magic-tweet";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +39,20 @@ export default async function DashboardPage() {
 
   const firstName = (session.user.name ?? "").split(" ")[0] || "there";
 
+  const tweetEmbeds: Record<string, React.ReactNode> = {};
+  for (const item of initialItems) {
+    if (item.type === "tweet") {
+      const tweetId = item.sourceUrl?.match(/status\/(\d+)/)?.[1];
+      if (tweetId) {
+        tweetEmbeds[tweetId] = (
+          <Suspense fallback={<TweetSkeleton />}>
+            <ServerTweetEmbed id={tweetId} />
+          </Suspense>
+        );
+      }
+    }
+  }
+
   return (
     <div className="flex w-full flex-col items-center gap-12 px-4 py-16 sm:px-6 sm:py-12">
       <div className="flex w-full flex-col items-center gap-8">
@@ -44,7 +61,10 @@ export default async function DashboardPage() {
           <span className="text-[#51b8ff]">{firstName}</span>
         </h1>
 
-        <MemoryDashboard initialItems={initialItems} />
+        <MemoryDashboard
+          initialItems={initialItems}
+          tweetEmbeds={tweetEmbeds}
+        />
       </div>
     </div>
   );

@@ -1,6 +1,10 @@
 import { getLinkPreview } from "link-preview-js";
 import { fetchTweet } from "react-tweet/api";
-import { cacheKeys, METADATA_CACHE_TTL_SECONDS, TWEET_CACHE_TTL_SECONDS } from "./cache/keys";
+import {
+  cacheKeys,
+  METADATA_CACHE_TTL_SECONDS,
+  TWEET_CACHE_TTL_SECONDS,
+} from "./cache/keys";
 import { getRedis } from "./cache/redis";
 import type { ContentMetadata } from "./content-types";
 
@@ -15,7 +19,7 @@ const youtubeRegex =
 const og = (html: string, property: string) => {
   const pattern = new RegExp(
     `<meta[^>]+(?:property|name)=["']${property}["'][^>]+content=["']([^"']+)["'][^>]*>`,
-    "i",
+    "i"
   );
   return html.match(pattern)?.[1];
 };
@@ -36,7 +40,9 @@ async function getCache(key: string) {
   return redis.get<MetadataResult>(key);
 }
 
-export async function extractWebsiteMetadata(url: string): Promise<MetadataResult> {
+export async function extractWebsiteMetadata(
+  url: string
+): Promise<MetadataResult> {
   const cacheKey = cacheKeys.metadata(url);
   const cached = await getCache(cacheKey);
   if (cached) {
@@ -66,21 +72,22 @@ export async function extractWebsiteMetadata(url: string): Promise<MetadataResul
       null,
     faviconUrl: previewData?.favicons?.[0] ?? null,
     title: og(html, "og:title") ?? previewData?.title ?? null,
-    description:
-      og(html, "og:description") ??
-      previewData?.description ??
-      null,
+    description: og(html, "og:description") ?? previewData?.description ?? null,
   };
 
   const result: MetadataResult = {
     metadata,
-    body: [metadata.title, metadata.description, url].filter(Boolean).join("\n"),
+    body: [metadata.title, metadata.description, url]
+      .filter(Boolean)
+      .join("\n"),
   };
   await setCache(cacheKey, result, METADATA_CACHE_TTL_SECONDS);
   return result;
 }
 
-export async function extractYouTubeMetadata(url: string): Promise<MetadataResult> {
+export async function extractYouTubeMetadata(
+  url: string
+): Promise<MetadataResult> {
   const videoId = getYouTubeVideoId(url);
   if (!videoId) {
     throw new Error("Invalid YouTube URL");
@@ -95,7 +102,7 @@ export async function extractYouTubeMetadata(url: string): Promise<MetadataResul
   console.info("cache.metadata.miss", { key: cacheKey, source: "youtube" });
 
   const oembedRes = await fetch(
-    `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`,
+    `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`
   );
   const oembed = (await oembedRes.json()) as {
     title?: string;
@@ -119,7 +126,9 @@ export async function extractYouTubeMetadata(url: string): Promise<MetadataResul
 
   const result: MetadataResult = {
     metadata,
-    body: [oembed.title ?? "", oembed.author_name ?? "", url].filter(Boolean).join("\n"),
+    body: [oembed.title ?? "", oembed.author_name ?? "", url]
+      .filter(Boolean)
+      .join("\n"),
   };
   await setCache(cacheKey, result, METADATA_CACHE_TTL_SECONDS);
   return result;
@@ -130,7 +139,9 @@ function getTweetId(url: string) {
   return matches?.[1] ?? null;
 }
 
-export async function extractTweetMetadata(url: string): Promise<MetadataResult> {
+export async function extractTweetMetadata(
+  url: string
+): Promise<MetadataResult> {
   const tweetId = getTweetId(url);
   if (!tweetId) {
     throw new Error("Invalid tweet URL");
@@ -159,13 +170,16 @@ export async function extractTweetMetadata(url: string): Promise<MetadataResult>
     thumbnailUrl: data.photos?.[0]?.url ?? null,
     title: data.user?.name ? `Tweet by ${data.user.name}` : "Tweet",
     description: data.text ?? null,
+    likeCount: data.favorite_count ?? null,
+    replyCount: data.conversation_count ?? null,
   };
 
   const result: MetadataResult = {
     metadata,
-    body: [data.text ?? "", data.user?.name ?? "", url].filter(Boolean).join("\n"),
+    body: [data.text ?? "", data.user?.name ?? "", url]
+      .filter(Boolean)
+      .join("\n"),
   };
   await setCache(cacheKey, result, TWEET_CACHE_TTL_SECONDS);
   return result;
 }
-
